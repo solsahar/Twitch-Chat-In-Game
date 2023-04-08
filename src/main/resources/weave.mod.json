@@ -1,0 +1,9 @@
+{
+  "mixinConfigs": [
+  ],
+  "entrypoints": [
+    "com.purpleground.twitchchatingame.TwitchChatInGame"
+  ],
+  "hooks": [
+  ]
+}
