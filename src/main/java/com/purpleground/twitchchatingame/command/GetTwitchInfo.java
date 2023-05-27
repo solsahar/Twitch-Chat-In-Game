@@ -1,6 +1,6 @@
 package com.purpleground.twitchchatingame.command;
 
-import club.maxstats.weave.loader.api.command.Command;
+import net.weavemc.loader.api.command.Command;
 import com.purpleground.twitchchatingame.TwitchChatInGame;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ChatComponentText;

@@ -1,8 +1,8 @@
 package com.purpleground.twitchchatingame;
 
-import club.maxstats.weave.loader.api.ModInitializer;
-import club.maxstats.weave.loader.api.command.CommandBus;
-import club.maxstats.weave.loader.api.event.*;
+import net.weavemc.loader.api.ModInitializer;
+import net.weavemc.loader.api.command.CommandBus;
+import net.weavemc.loader.api.event.*;
 import com.purpleground.twitchchatingame.command.*;
 import com.github.philippheuer.credentialmanager.domain.OAuth2Credential;
 import com.github.philippheuer.events4j.simple.SimpleEventHandler;
@@ -39,7 +39,7 @@ public class TwitchChatInGame implements ModInitializer {
     public List<String> channels = new ArrayList<>();
     public boolean connectedToTwitch = false;
     public Path getConfigDirPath(){
-        return Paths.get(System.getProperty("user.home"), ".lunarclient", "mods", "TwitchChat");
+        return Paths.get(System.getProperty("user.home"), ".weave", "mods", "TwitchChat");
     }
     public Path getConfigPath(){
         return getConfigDirPath().resolve("config.json");
@@ -105,7 +105,7 @@ public class TwitchChatInGame implements ModInitializer {
     }
 
     @Override
-    public void init() {
+    public void preInit() {
         System.out.println("Initializing StatChecker!");
         System.out.println("Connecting to twitch!");
         new Thread(() -> {
@@ -144,6 +144,15 @@ public class TwitchChatInGame implements ModInitializer {
         twitchHelpCommand.twitchChatInGame = this;
         CommandBus.register(twitchHelpCommand);
 
+    }
+    public static String fixMessageColor(String input) {
+        StringBuilder outputBuilder = new StringBuilder();
+
+        for (int i = 0; i < input.length(); i++) {
+            outputBuilder.append("§7").append(input.charAt(i));
+        }
+
+        return outputBuilder.toString();
     }
     public boolean connectToTwitch(){
         try{
@@ -184,7 +193,7 @@ public class TwitchChatInGame implements ModInitializer {
 
     }
     private void onChannelMessage(ChannelMessageEvent event){
-        String output = String.format("§5[§dTWITCH-CHAT§5] §5%s §6>> §b%s §f: §7%s", event.getChannel().getName(), event.getUser().getName(), event.getMessage());
+        String output = String.format("§5[§dTWITCH-CHAT§5] §5%s §6>> §b%s§f: %s", event.getChannel().getName(), event.getUser().getName(), event.getMessage());
         Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(output));
     }
 }
