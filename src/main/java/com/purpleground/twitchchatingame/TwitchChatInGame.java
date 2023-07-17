@@ -1,6 +1,12 @@
 package com.purpleground.twitchchatingame;
 
+import com.github.philippheuer.credentialmanager.domain.IdentityProvider;
+import com.github.twitch4j.auth.TwitchAuth;
+import com.github.twitch4j.auth.providers.TwitchIdentityProvider;
+import com.github.twitch4j.pubsub.domain.ChannelPointsRedemption;
+import com.github.twitch4j.pubsub.events.RewardRedeemedEvent;
 import net.weavemc.loader.api.ModInitializer;
+import net.weavemc.loader.api.command.Command;
 import net.weavemc.loader.api.command.CommandBus;
 import net.weavemc.loader.api.event.*;
 import com.purpleground.twitchchatingame.command.*;
@@ -22,21 +28,30 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jetbrains.annotations.Debug;
+import org.lwjgl.Sys;
 
 
 public class TwitchChatInGame implements ModInitializer {
+
     public static class TwitchConfig {
         public String clientId;
         public String clientSecret;
         public String oauth;
         public String[] channelList;
+        public String defaultChannel;
     }
+    public String defaultChannel;
 
     public ITwitchClient client;
+    public OAuth2Credential credentials;
+    public String displayName;
     public String oauthToken = "None";
     public String clientId = "None";
     public String clientSecret = "None";
     public List<String> channels = new ArrayList<>();
+
+    public Map<String, String> connectedChannels;
     public boolean connectedToTwitch = false;
     public Path getConfigDirPath(){
         return Paths.get(System.getProperty("user.home"), ".weave", "mods", "TwitchChat");
@@ -52,6 +67,7 @@ public class TwitchChatInGame implements ModInitializer {
         config.clientSecret = this.clientSecret;
         config.oauth = this.oauthToken;
         config.channelList = this.channels.toArray(new String[0]);
+        config.defaultChannel = this.defaultChannel;
         ObjectMapper mapper = new ObjectMapper();
         try {
             mapper.writeValue(new File(getConfigPath().toUri()), config);
@@ -96,6 +112,7 @@ public class TwitchChatInGame implements ModInitializer {
             this.clientId = obj.clientId;
             this.clientSecret = obj.clientSecret;
             this.oauthToken = obj.oauth;
+            this.defaultChannel = obj.defaultChannel;
             this.channels = new ArrayList<>(Arrays.asList(obj.channelList));
         } catch (IOException e) {
             e.printStackTrace();
@@ -128,9 +145,9 @@ public class TwitchChatInGame implements ModInitializer {
         twitchDisconnectCommand.twitchChatInGame = this;
         CommandBus.register(twitchDisconnectCommand);
 
-        //GetTwitchInfo getTwitchInfoCommand = new GetTwitchInfo();
-        //getTwitchInfoCommand.twitchChatInGame = this;
-        //CommandBus.register(getTwitchInfoCommand);
+        GetTwitchInfo getTwitchInfoCommand = new GetTwitchInfo();
+        getTwitchInfoCommand.twitchChatInGame = this;
+        CommandBus.register(getTwitchInfoCommand);
 
         SetTwitchSetting setTwitchSettingCommand = new SetTwitchSetting();
         setTwitchSettingCommand.twitchChatInGame = this;
@@ -143,6 +160,14 @@ public class TwitchChatInGame implements ModInitializer {
         TwitchHelp twitchHelpCommand = new TwitchHelp();
         twitchHelpCommand.twitchChatInGame = this;
         CommandBus.register(twitchHelpCommand);
+
+        TwitchChat twitchChatCommand = new TwitchChat();
+        twitchChatCommand.twitchChatInGame = this;
+        CommandBus.register(twitchChatCommand);
+
+        TwitchChatDefault twitchChatDefaultCommand = new TwitchChatDefault();
+        twitchChatDefaultCommand.twitchChatInGame = this;
+        CommandBus.register(twitchChatDefaultCommand);
 
     }
     public static String fixMessageColor(String input) {
@@ -163,27 +188,56 @@ public class TwitchChatInGame implements ModInitializer {
             System.out.println(e.toString());
         }
         try{
-            OAuth2Credential credential = StringUtils.isNotBlank(oauthToken) ? new OAuth2Credential("twitch", oauthToken) : null;
-
+            connectedChannels = new HashMap<>();
+            credentials = StringUtils.isNotBlank(oauthToken) ? new OAuth2Credential("twitch", oauthToken) : null;
+            System.out.println(credentials.toString());
+            displayName = new TwitchIdentityProvider(null, null, null).getAdditionalCredentialInformation(credentials).map(OAuth2Credential::getUserName).orElse(null);
             // Build TwitchClient
             client = TwitchClientBuilder.builder()
                     .withClientId(clientId)
                     .withClientSecret(clientSecret)
                     .withEnableChat(true)
-                    .withChatAccount(credential)
+                    .withChatAccount(credentials)
                     .withEnableHelix(true)
-                    .withDefaultAuthToken(credential)
+                    .withDefaultAuthToken(credentials)
+                    .withEnablePubSub(true)
                     .build();
+            System.out.println("Channels in list: " + channels.size());
             if (!channels.isEmpty()) {
-                channels.forEach(name -> client.getChat().joinChannel(name));
+                channels.forEach(name -> {
+                    client.getChat().joinChannel(name);
+                    // Get the channel ID
+                    String channelId = client.getHelix()
+                            .getUsers(null, null, Collections.singletonList(name))
+                            .execute()
+                            .getUsers()
+                            .get(0)
+                            .getId();
+                    connectedChannels.put(name, channelId);
+                    client.getPubSub().listenForChannelPointsRedemptionEvents(credentials, channelId);
+                });
+
                 client.getClientHelper().enableStreamEventListener(channels);
                 client.getClientHelper().enableFollowEventListener(channels);
+            }
+            if (displayName != null){
+                String channelId = client.getHelix()
+                        .getUsers(null, null, Collections.singletonList(displayName))
+                        .execute()
+                        .getUsers()
+                        .get(0)
+                        .getId();
+                connectedChannels.put(displayName, channelId);
+                client.getPubSub().listenForChannelPointsRedemptionEvents(credentials, channelId);
             }
 
             // Register event listeners
             ITwitchChat chat = client.getChat();
             SimpleEventHandler eventHandler = client.getEventManager().getEventHandler(SimpleEventHandler.class);
             eventHandler.onEvent(ChannelMessageEvent.class, this::onChannelMessage);
+            SimpleEventHandler pubsubEventHandler = client.getPubSub().getEventManager().getEventHandler(SimpleEventHandler.class);
+            pubsubEventHandler.onEvent(RewardRedeemedEvent.class, this::onChannelPointRedemption);
+
             return true;
         }
         catch(Exception e){
@@ -192,6 +246,19 @@ public class TwitchChatInGame implements ModInitializer {
         }
 
     }
+    public static String findUsernameById(Map<String, String> usernameToID, String targetId) {
+        for (Map.Entry<String, String> entry : usernameToID.entrySet()) {
+            if (entry.getValue().equals(targetId)) {
+                return entry.getKey();
+            }
+        }
+        return null; // Return null if the ID is not found
+    }
+    private void onChannelPointRedemption(RewardRedeemedEvent event) {
+        String output = String.format("§5[§dTWITCH-REDEMPTION§5] §5%s §6>> §b%s§f redeemed %s", findUsernameById(connectedChannels, event.getRedemption().getChannelId()), event.getRedemption().getUser().getDisplayName(), event.getRedemption().getReward().getTitle());
+        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(output));
+    }
+
     private void onChannelMessage(ChannelMessageEvent event){
         String output = String.format("§5[§dTWITCH-CHAT§5] §5%s §6>> §b%s§f: %s", event.getChannel().getName(), event.getUser().getName(), event.getMessage());
         Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(output));

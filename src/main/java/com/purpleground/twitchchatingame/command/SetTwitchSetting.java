@@ -24,6 +24,7 @@ public class SetTwitchSetting extends Command {
             Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels remove <channel>§f: Remove a channel from the channel list."));
             Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels clear§f: Clear the channel list."));
             Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels list§f: List the channel list."));
+            Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels default <channel>§f: Sets the default channel for /tcd."));
             Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6Note§f: you must restart the connection from twitch for settings to apply."));
         }
         else{
@@ -50,8 +51,7 @@ public class SetTwitchSetting extends Command {
                     }
                 }else if(args[1].equalsIgnoreCase("remove")){
                     if(args.length >= 3) {
-                        boolean worked = twitchChatInGame.channels.remove(args[2].toLowerCase());
-                        if (worked){
+                        if (twitchChatInGame.channels.remove(args[2].toLowerCase())){
                             Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(String.format("§5[§dTWITCH-CHAT§5] §2Removed %s from channel list!", args[2])));
                         }
                         else{
@@ -66,16 +66,22 @@ public class SetTwitchSetting extends Command {
                     Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§5[§dTWITCH-CHAT§5] §2Cleared channel list!"));
                 }else if(args[1].equalsIgnoreCase("list")){
                     Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§5[§dTWITCH-CHAT§5] §2Channels: " + twitchChatInGame.channels.toString()));
+                }else if (args[1].equalsIgnoreCase("default")){
+                    if(args.length >= 3) {
+                        twitchChatInGame.defaultChannel = args[2];
+                        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(String.format("§5[§dTWITCH-CHAT§5] §2Set %s as the default channel!", args[2])));
+                    }
+                    else{
+                        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§5[§dTWITCH-CHAT§5] §4Missing Channel!"));
+                    }
                 }
                 else{
                     Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6-------§5Twitch Help: §dTwitchSetting§6-------"));
-                    Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting clientid <client id>§f: Set the ClientID."));
-                    Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting clientsecret <client secret>§f: Set the ClientSecret."));
-                    Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting oauth <oauth token>§f: Set the Oauth token."));
                     Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels add <channel>§f: Add a channel that will be listened to."));
                     Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels remove <channel>§f: Remove a channel from the channel list."));
                     Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels clear§f: Clear the channel list."));
                     Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels list§f: List the channel list."));
+                    Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels default <channel>§f: Sets the default channel for /tcd."));
                     Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6Note§f: you must restart the connection from twitch for settings to apply."));
                 }
             }
@@ -88,6 +94,7 @@ public class SetTwitchSetting extends Command {
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels remove <channel>§f: Remove a channel from the channel list."));
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels clear§f: Clear the channel list."));
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels list§f: List the channel list."));
+                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels default <channel>§f: Sets the default channel for /tcd."));
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6Note§f: you must restart the connection from twitch for settings to apply."));
             }
             try {
