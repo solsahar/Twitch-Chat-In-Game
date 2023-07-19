@@ -26,8 +26,6 @@ public class TwitchHelp extends Command {
         } else if (args.length == 1){
             if(args[0].equalsIgnoreCase("twitchsetting")){
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6-------§5Twitch Help: §dTwitchSetting§6-------"));
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting clientid <client id>§f: Set the ClientID."));
-                Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting clientsecret <client secret>§f: Set the ClientSecret."));
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting oauth <oauth token>§f: Set the Oauth token."));
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels add <channel>§f: Add a channel that will be listened to."));
                 Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText("§6/twitchsetting channels remove <channel>§f: Remove a channel from the channel list."));

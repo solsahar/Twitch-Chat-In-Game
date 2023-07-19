@@ -12,6 +12,6 @@ public class GetTwitchInfo extends Command {
     }
     @Override
     public void handle(String[] args) {
-        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(String.format("ClientID: %s | ClientSecret: %s | oauth: %s", twitchChatInGame.clientId, twitchChatInGame.clientSecret, twitchChatInGame.oauthToken)));
+        Minecraft.getMinecraft().thePlayer.addChatMessage(new ChatComponentText(String.format("Oauth: %s", twitchChatInGame.oauthToken)));
     }
 }

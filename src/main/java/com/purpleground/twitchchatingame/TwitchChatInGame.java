@@ -1,5 +1,6 @@
 package com.purpleground.twitchchatingame;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.philippheuer.credentialmanager.domain.IdentityProvider;
 import com.github.twitch4j.auth.TwitchAuth;
 import com.github.twitch4j.auth.providers.TwitchIdentityProvider;
@@ -33,10 +34,8 @@ import org.lwjgl.Sys;
 
 
 public class TwitchChatInGame implements ModInitializer {
-
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TwitchConfig {
-        public String clientId;
-        public String clientSecret;
         public String oauth;
         public String[] channelList;
         public String defaultChannel;
@@ -47,8 +46,6 @@ public class TwitchChatInGame implements ModInitializer {
     public OAuth2Credential credentials;
     public String displayName;
     public String oauthToken = "None";
-    public String clientId = "None";
-    public String clientSecret = "None";
     public List<String> channels = new ArrayList<>();
 
     public Map<String, String> connectedChannels;
@@ -63,8 +60,6 @@ public class TwitchChatInGame implements ModInitializer {
         fixPaths();
 
         TwitchConfig config = new TwitchConfig();
-        config.clientId = this.clientId;
-        config.clientSecret = this.clientSecret;
         config.oauth = this.oauthToken;
         config.channelList = this.channels.toArray(new String[0]);
         config.defaultChannel = this.defaultChannel;
@@ -109,8 +104,6 @@ public class TwitchChatInGame implements ModInitializer {
         ObjectMapper mapper = new ObjectMapper();
         try {
             TwitchConfig obj = mapper.readValue(new File(getConfigPath().toUri()), TwitchConfig.class);
-            this.clientId = obj.clientId;
-            this.clientSecret = obj.clientSecret;
             this.oauthToken = obj.oauth;
             this.defaultChannel = obj.defaultChannel;
             this.channels = new ArrayList<>(Arrays.asList(obj.channelList));
@@ -190,12 +183,9 @@ public class TwitchChatInGame implements ModInitializer {
         try{
             connectedChannels = new HashMap<>();
             credentials = StringUtils.isNotBlank(oauthToken) ? new OAuth2Credential("twitch", oauthToken) : null;
-            System.out.println(credentials.toString());
             displayName = new TwitchIdentityProvider(null, null, null).getAdditionalCredentialInformation(credentials).map(OAuth2Credential::getUserName).orElse(null);
             // Build TwitchClient
             client = TwitchClientBuilder.builder()
-                    .withClientId(clientId)
-                    .withClientSecret(clientSecret)
                     .withEnableChat(true)
                     .withChatAccount(credentials)
                     .withEnableHelix(true)
